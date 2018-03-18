@@ -1,0 +1,67 @@
+﻿<Window x:Class="NetworkTrainer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NetworkTrainer"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="725">
+    <Window.DataContext>
+        <local:MainWindowModel/>
+    </Window.DataContext>
+    <Window.Resources>
+        <local:InverseBooleanConverter x:Key="InverseBoolean"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Label Content="{Binding TrainerType}" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="22" FontStyle="Italic"/>
+            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                <Button IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}" Click="SaveNetworkButton_Click">Save NN</Button>
+                <Button Click="LoadNetworkButton_Click" IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}">Load NN file</Button>
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox IsChecked="{Binding UseLoadedNN}" VerticalAlignment="Center"/>
+                    <Label>Use loaded NN:</Label>
+                </StackPanel>
+                <Label Content="{Binding LoadedNNName}"/>
+                <Button Click="LoadMnistDataButton_Click" IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}">Load MNIST data</Button>
+                <Button Click="LoadGenericIdxDataButton_Click" IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}">Load generic [0-1] IDX data</Button>
+                <StackPanel Orientation="Horizontal">
+                    <Label>Training data count:</Label>
+                    <Label Content="{Binding TrainingDataCount}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label>Testing data count:</Label>
+                    <Label Content="{Binding TestingDataCount}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label>Hidden layers:</Label>
+                    <TextBox Text="{Binding HiddenLayers}" IsEnabled="{Binding UseLoadedNN, Converter={StaticResource InverseBoolean}}" Width="100"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label>Epochs:</Label>
+                    <TextBox Text="{Binding Epochs}" Width="100"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label>Batch size:</Label>
+                    <TextBox Text="{Binding BatchSize}" Width="100"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label>Learning rate:</Label>
+                    <TextBox Text="{Binding LearningRate}" Width="100"/>
+                </StackPanel>
+                <Button Click="StartButton_Click">Start</Button>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Column="1">
+            <TextBox Name="ConsoleTextBox" Text="{Binding ConsoleString}" IsReadOnly="True" Background="Black" Foreground="White" TextWrapping="Wrap" VerticalScrollBarVisibility="Visible"/>
+        </Grid>
+    </Grid>
+</Window>
