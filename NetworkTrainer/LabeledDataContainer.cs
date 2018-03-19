@@ -19,6 +19,16 @@ namespace NetworkTrainer
         protected int outputDataSize = 0;
         protected bool autoReadDataSize = true;
 
+        static LabeledDataContainer()
+        {
+            bytesPerType[IdxDataType.UnsignedByte] = 1;
+            bytesPerType[IdxDataType.SignedByte] = 1;
+            bytesPerType[IdxDataType.Short] = 2;
+            bytesPerType[IdxDataType.Integer] = 4;
+            bytesPerType[IdxDataType.Float] = 4;
+            bytesPerType[IdxDataType.Double] = 8;
+        }
+
         public T[][] TrainingSet => trainingSet;
         public T[][] TrainingLabels => trainingLabels;
         public T[][] TestingSet => testingSet;
@@ -115,10 +125,32 @@ namespace NetworkTrainer
 
         protected void LoadData(string dataFile, string labelFile, out T[][] data, out T[][] labels)
         {
-            IdxReader dataReader = new IdxReader(dataFile);
-            data = dataReader.ReadToEndAsVectors<T>();
-            IdxReader labelsReader = new IdxReader(labelFile);
-            labels = labelsReader.ReadToEndAsVectors<T>();
+            data = LoadSingleFile(dataFile);
+            labels = LoadSingleFile(labelFile);
         }
+
+        protected T[][] LoadSingleFile(string dataFile)
+        {
+            IdxReader dataReader = new IdxReader(dataFile);
+            int bpt = bytesPerType[dataReader.DataType];
+            int sampleValuesCount = 1;
+            foreach (int dim in dataReader.Dimensions)
+                sampleValuesCount *= dim;
+            int sampleSize = sampleValuesCount * bpt;
+            byte[][] source = dataReader.ReadToEndAsVectors<byte>();
+            byte[] tempData = new byte[source.Length * sampleSize];
+            for(int i = 0; i < source.Length; ++i)
+                Buffer.BlockCopy(source[i], 0, tempData, sampleSize*i, sampleSize);
+            T[][] data = new T[tempData.Length / sampleSize][];
+            for (int i = 0; i < data.Length; ++i)
+            {
+                int offset = sampleSize * i;
+                data[i] = new T[sampleValuesCount];
+                Buffer.BlockCopy(tempData, offset, data[i], 0, sampleSize);
+            }
+            return data;
+        }
+
+        protected static readonly Dictionary<IdxDataType, int> bytesPerType = new Dictionary<IdxDataType, int>();
     }
 }
