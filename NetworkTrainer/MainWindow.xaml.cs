@@ -1,4 +1,4 @@
-﻿using Accord.IO;
+﻿using IdxHelper;
 using Microsoft.Win32;
 using NeuralNetwork;
 using System;
@@ -50,6 +50,18 @@ namespace NetworkTrainer
             }
         }
 
+        private void LoadRpmDataButton_Click(object sender, RoutedEventArgs e)
+        {
+            LoadIdxDataWindow ldw = new LoadIdxDataWindow { Title = "Load RPM audio data" };
+            if (ldw.ShowDialog().GetValueOrDefault())
+            {
+                LoadIdxDataWindowModel dc = ldw.DataContext as LoadIdxDataWindowModel;
+                dataContainer = new AudioRpmDataContainer();
+                LoadData(dc.TrainingData, dc.TrainingLabels, dc.TestingData, dc.TestingLabels);
+                model.TrainerType = "RPM trainer";
+            }
+        }
+
         private void LoadGenericIdxDataButton_Click(object sender, RoutedEventArgs e)
         {
             LoadIdxDataWindow ldw = new LoadIdxDataWindow { Title = "Load generic IDX data" };
@@ -57,25 +69,12 @@ namespace NetworkTrainer
             {
 
                 LoadIdxDataWindowModel dc = ldw.DataContext as LoadIdxDataWindowModel;
-                IdxReader dataReader = new IdxReader(dc.TrainingData);
-                switch (dataReader.DataType)
-                {
-                    case IdxDataType.UnsignedByte:
-                        dataContainer = new LabeledDataContainer<byte>();
-                        break;
-                    case IdxDataType.Short:
-                        dataContainer = new LabeledDataContainer<short>();
-                        break;
-                    case IdxDataType.Integer:
-                        dataContainer = new LabeledDataContainer<int>();
-                        break;
-                    case IdxDataType.Float:
-                        dataContainer = new LabeledDataContainer<float>();
-                        break;
-                    default:
-                        dataContainer = new LabeledDataContainer<double>();
-                        break;
-                }
+                IdxReader dataReader = new IdxReader(dc.TestingData);
+                IdxReader labelReader = new IdxReader(dc.TestingLabels);
+                Type dataType = GetTypeFromIdxType(dataReader.DataType);
+                Type labelType = GetTypeFromIdxType(labelReader.DataType);
+                Type containerType = typeof(LabeledDataContainer<,>).MakeGenericType(dataType, labelType);
+                dataContainer = Activator.CreateInstance(containerType) as ILabeledDataContainer;
                 LoadData(dc.TrainingData, dc.TrainingLabels, dc.TestingData, dc.TestingLabels);
                 model.TrainerType = "Generic trainer";
             }
@@ -193,6 +192,24 @@ namespace NetworkTrainer
             model.TrainingDataCount = dataContainer.GetTrainingSetSize();
             dataContainer.LoadTestingData(testD, testL);
             model.TestingDataCount = dataContainer.GetTestingSetSize();
+        }
+
+        private Type GetTypeFromIdxType(IdxDataType idxType)
+        {
+            switch (idxType)
+            {
+                case IdxDataType.UByte:
+                case IdxDataType.SByte:
+                    return typeof(byte);
+                case IdxDataType.Short:
+                    return typeof(short);
+                case IdxDataType.Int:
+                    return typeof(int);
+                case IdxDataType.Float:
+                    return typeof(float);
+                default:
+                    return typeof(double);
+            }
         }
     }
 }

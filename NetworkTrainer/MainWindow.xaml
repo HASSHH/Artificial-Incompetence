@@ -31,7 +31,8 @@
                     <Label>Use loaded NN:</Label>
                 </StackPanel>
                 <Label Content="{Binding LoadedNNName}"/>
-                <Button Click="LoadMnistDataButton_Click" IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}">Load MNIST data</Button>
+                <Button Click="LoadMnistDataButton_Click" IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}">Load MNIST data (.gz)</Button>
+                <Button IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}" Click="LoadRpmDataButton_Click">Load RPM audio data</Button>
                 <Button Click="LoadGenericIdxDataButton_Click" IsEnabled="{Binding TrainingActive, Converter={StaticResource InverseBoolean}}">Load generic [0-1] IDX data</Button>
                 <StackPanel Orientation="Horizontal">
                     <Label>Training data count:</Label>

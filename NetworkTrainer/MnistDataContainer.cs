@@ -1,5 +1,4 @@
-﻿using Accord.IO;
-using NeuralNetwork;
+﻿using NeuralNetwork;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,43 +7,31 @@ using System.Threading.Tasks;
 
 namespace NetworkTrainer
 {
-    class MnistDataContainer : LabeledDataContainer<byte>
+    class MnistDataContainer : LabeledDataContainer<byte, byte>
     {
         public MnistDataContainer()
         {
+            isDataCompressed = true;
             autoReadDataSize = false;
             inputDataSize = 784;
             outputDataSize = 10;
         }
 
-        protected override LabeledData DataAsLabeledData(byte[] data, byte[] label)
+        protected override double[] NormalizeInputData(byte[] input)
         {
-            double[] input = new double[data.Length];
+            double[] result = new double[input.Length];
             for (int i = 0; i < input.Length; ++i)
-                input[i] = NormalizeData(data[i]);
-            int digit = label[0];
-            double[] output = new double[10];
-            for (int i = 0; i < 10; ++i)
-                output[i] = i == digit ? 1d : 0d;
-            return LabeledData.MakeFromArrays(input, output);
+                result[i] = input[i] / 255d;
+            return result;
         }
 
-        protected override double NormalizeData(byte input)
+        protected override double[] NormalizeOutputData(byte[] output)
         {
-            return Convert.ToDouble(input) / 255d;
-        }
-
-        private LabeledData DataAsLabeledData(byte[] data, byte label)
-        {
-            double[] input = new double[data.Length];
-            //normalization
-            for (int i = 0; i < input.Length; ++i)
-                input[i] = Convert.ToDouble(data[i]) / 255d;
-            int digit = Convert.ToInt32(label);
-            double[] output = new double[10];
+            int digit = output[0];
+            double[] result = new double[10];
             for (int i = 0; i < 10; ++i)
-                output[i] = i == digit ? 1d : 0d;
-            return LabeledData.MakeFromArrays(input, output);
+                result[i] = i == digit ? 1d : 0d;
+            return result;
         }
 
         public override bool CheckIfOutputIsCorrect(double[] output, double[] correct)
@@ -59,14 +46,6 @@ namespace NetworkTrainer
                     cMax = i;
             }
             return oMax == cMax;
-        }
-
-        private void LoadData(string dataFile, string labelFile, out byte[][] data, out byte[] labels)
-        {
-            IdxReader dataReader = new IdxReader(dataFile);
-            data = dataReader.ReadToEndAsVectors<byte>();
-            IdxReader labelsReader = new IdxReader(labelFile);
-            labels = labelsReader.ReadToEndAsValues<byte>();
         }
     }
 }

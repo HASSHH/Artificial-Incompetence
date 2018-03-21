@@ -1,4 +1,4 @@
-﻿using Accord.IO;
+﻿using IdxHelper;
 using NeuralNetwork;
 using System;
 using System.Collections.Generic;
@@ -8,31 +8,22 @@ using System.Threading.Tasks;
 
 namespace NetworkTrainer
 {
-    class LabeledDataContainer<T> : ILabeledDataContainer
+    class LabeledDataContainer<T, L> : ILabeledDataContainer
     {
         protected T[][] trainingSet;
-        protected T[][] trainingLabels;
+        protected L[][] trainingLabels;
         protected T[][] testingSet;
-        protected T[][] testingLabels;
+        protected L[][] testingLabels;
 
         protected int inputDataSize = 0;
         protected int outputDataSize = 0;
         protected bool autoReadDataSize = true;
-
-        static LabeledDataContainer()
-        {
-            bytesPerType[IdxDataType.UnsignedByte] = 1;
-            bytesPerType[IdxDataType.SignedByte] = 1;
-            bytesPerType[IdxDataType.Short] = 2;
-            bytesPerType[IdxDataType.Integer] = 4;
-            bytesPerType[IdxDataType.Float] = 4;
-            bytesPerType[IdxDataType.Double] = 8;
-        }
+        protected bool isDataCompressed = false;
 
         public T[][] TrainingSet => trainingSet;
-        public T[][] TrainingLabels => trainingLabels;
+        public L[][] TrainingLabels => trainingLabels;
         public T[][] TestingSet => testingSet;
-        public T[][] TestingLabels => testingLabels;
+        public L[][] TestingLabels => testingLabels;
 
         public double MaxOutputDistance { get; set; } = 0.05d;
 
@@ -102,55 +93,47 @@ namespace NetworkTrainer
         }
 
         /// <summary>
-        /// Override only when overriding the normalization function isn't enough.
+        /// Override only when overriding the normalization functions isn't enough.
         /// </summary>
-        protected virtual LabeledData DataAsLabeledData(T[] data, T[] label)
+        protected virtual LabeledData DataAsLabeledData(T[] data, L[] label)
         {
-            double[] input = new double[data.Length];
-            for (int i = 0; i < input.Length; ++i)
-                input[i] = NormalizeData(data[i]);
-            double[] output = new double[label.Length];
-            for (int i = 0; i < output.Length; ++i)
-                output[i] = NormalizeData(label[i]);
+            double[] input = NormalizeInputData(data);
+            double[] output = NormalizeOutputData(label);
             return LabeledData.MakeFromArrays(input, output);
         }
 
         /// <summary>
         /// Override with the respective function to bring inputs in the [0,1] range.
         /// </summary>
-        protected virtual double NormalizeData(T input)
+        protected virtual double[] NormalizeInputData(T[] input)
         {
-            return Convert.ToDouble(input);
+            double[] result = new double[input.Length];
+            for (int i = 0; i < result.Length; ++i)
+                result[i] = Convert.ToDouble(input[i]);
+            return result;
         }
 
-        protected void LoadData(string dataFile, string labelFile, out T[][] data, out T[][] labels)
+        /// <summary>
+        /// Override with the respective function to bring output in the [0,1] range.
+        /// </summary>
+        protected virtual double[] NormalizeOutputData(L[] output)
         {
-            data = LoadSingleFile(dataFile);
-            labels = LoadSingleFile(labelFile);
+            double[] result = new double[output.Length];
+            for (int i = 0; i < result.Length; ++i)
+                result[i] = Convert.ToDouble(output[i]);
+            return result;
         }
 
-        protected T[][] LoadSingleFile(string dataFile)
+        protected void LoadData(string dataFile, string labelFile, out T[][] data, out L[][] labels)
         {
-            IdxReader dataReader = new IdxReader(dataFile);
-            int bpt = bytesPerType[dataReader.DataType];
-            int sampleValuesCount = 1;
-            foreach (int dim in dataReader.Dimensions)
-                sampleValuesCount *= dim;
-            int sampleSize = sampleValuesCount * bpt;
-            byte[][] source = dataReader.ReadToEndAsVectors<byte>();
-            byte[] tempData = new byte[source.Length * sampleSize];
-            for(int i = 0; i < source.Length; ++i)
-                Buffer.BlockCopy(source[i], 0, tempData, sampleSize*i, sampleSize);
-            T[][] data = new T[tempData.Length / sampleSize][];
-            for (int i = 0; i < data.Length; ++i)
-            {
-                int offset = sampleSize * i;
-                data[i] = new T[sampleValuesCount];
-                Buffer.BlockCopy(tempData, offset, data[i], 0, sampleSize);
-            }
-            return data;
+            data = LoadSingleFile<T>(dataFile);
+            labels = LoadSingleFile<L>(labelFile);
         }
 
-        protected static readonly Dictionary<IdxDataType, int> bytesPerType = new Dictionary<IdxDataType, int>();
+        protected V[][] LoadSingleFile<V>(string dataFile)
+        {
+            IdxReader dataReader = new IdxReader(dataFile, isDataCompressed);
+            return dataReader.GetSamples<V>();
+        }
     }
 }
